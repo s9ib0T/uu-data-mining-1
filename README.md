@@ -9,6 +9,10 @@ pip install -r requirements.txt
 scripts/download.sh
 ```
 
-`scripts/download.sh` downloads the Copenhagen Networks Study data from figshare to `data/copenhagen/`. It skips files that already exist. The first code cell in `notebooks/preprocess.ipynb` runs the same script.
+When opening a notebook, select `.venv/bin/python` as the kernel; the notebooks need the packages installed in `.venv`.
+
+`scripts/download.sh` downloads the Copenhagen Networks Study data from figshare to `data/copenhagen/`. It skips files that already exist. The first code cell in `notebooks/preprocess.ipynb` runs the script.
 
 Do not edit the files in `data/copenhagen/`. Save changed data to `data/processed/`.
+
+Analysis code is in `src/`, and the notebooks import it.
