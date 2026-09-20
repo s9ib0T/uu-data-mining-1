@@ -54,3 +54,80 @@ def presence(bt):
     own = bt[["timestamp", "user_a"]].rename(columns={"user_a": "user"})
     seen = bt.loc[bt.user_b >= 0, ["timestamp", "user_b"]].rename(columns={"user_b": "user"})
     return pd.concat([own, seen]).drop_duplicates()
+
+
+# exploration plots
+
+def plot_row_types(bt):
+    shares = pd.Series(
+        {
+            "real pair": (bt.user_b >= 0).mean(),
+            "empty scan": (bt.user_b == EMPTY).mean(),
+            "outside device": (bt.user_b == OUTSIDE).mean(),
+        }
+    )
+    fig, ax = plt.subplots(figsize=(6, 3.5))
+    ax.bar(shares.index, shares)
+    ax.set_ylabel("share of rows")
+    ax.set_title("Bluetooth rows by type")
+    return fig
+
+
+def plot_rssi(bt):
+    real = bt.rssi[bt.user_b >= 0]
+    outside = bt.rssi[bt.user_b == OUTSIDE]
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 4))
+    bins = np.arange(-108, 22)
+    ax1.hist(real, bins=bins, histtype="step", label="real pair")
+    ax1.hist(outside, bins=bins, histtype="step", label="outside device")
+    ax1.set_xlabel("RSSI (dBm)")
+    ax1.set_ylabel("rows")
+    ax1.set_title("RSSI distribution")
+    ax1.legend()
+    ax2.boxplot([real, outside], tick_labels=["real pair", "outside device"], orientation="horizontal")
+    ax2.set_xlabel("RSSI (dBm)")
+    ax2.set_title("RSSI box plot")
+    return fig
+
+
+def plot_activity(real):
+    by_hour = (real.timestamp % DAY // 3600).value_counts().sort_index()
+    by_day = (real.timestamp // DAY).value_counts().sort_index()
+    weekend = by_day[(by_day.index % 7).isin([0, 6])]
+    weekday = by_day.drop(weekend.index)
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 4))
+    ax1.bar(by_hour.index, by_hour.values / 1e3)
+    ax1.set_xlabel("hour of day")
+    ax1.set_ylabel("real-pair rows (thousands)")
+    ax1.set_title("Activity by hour")
+    ax2.bar(weekday.index, weekday.values / 1e3, label="weekday")
+    ax2.bar(weekend.index, weekend.values / 1e3, label="weekend")
+    ax2.set_xlabel("day of study")
+    ax2.set_title("Activity by day")
+    ax2.legend()
+    return fig
+
+
+def plot_partners(real):
+    pairs = real[["user_a", "user_b"]].drop_duplicates()
+    n = pd.concat([pairs.user_a, pairs.user_b]).value_counts()
+    fig, ax = plt.subplots(figsize=(6, 3.5))
+    ax.hist(n, bins=50)
+    ax.set_xlabel("distinct partners over 28 days")
+    ax.set_ylabel("students")
+    ax.set_title("Partners per student")
+    return fig
+
+
+def plot_pair_bins(real):
+    n = real.groupby(["user_a", "user_b"]).size()
+    fig, ax = plt.subplots(figsize=(6, 3.5))
+    # log-spaced edges rounded to whole bins, so small counts get no empty gaps
+    edges = np.unique(np.geomspace(1, n.max() + 1, 40).astype(int))
+    ax.hist(n, bins=edges)
+    ax.set_xscale("log")
+    ax.set_yscale("log")
+    ax.set_xlabel("bins together (log scale)")
+    ax.set_ylabel("pairs (log scale)")
+    ax.set_title("Time together per pair")
+    return fig
