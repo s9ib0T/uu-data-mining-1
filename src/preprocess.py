@@ -44,3 +44,13 @@ def load_sms():
         RAW / "sms.csv",
         dtype={"timestamp": "int32", "sender": "int16", "recipient": "int16"}
     )
+
+
+# checks
+
+def presence(bt):
+    # one row per (bin, student) where the phone was on
+    # own row of any kind, or seen by another student
+    own = bt[["timestamp", "user_a"]].rename(columns={"user_a": "user"})
+    seen = bt.loc[bt.user_b >= 0, ["timestamp", "user_b"]].rename(columns={"user_b": "user"})
+    return pd.concat([own, seen]).drop_duplicates()
